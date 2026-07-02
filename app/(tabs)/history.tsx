@@ -8,6 +8,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react'; // transactions state එකක් තිබේ නම්
 
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+
+import { Button } from 'react-native';
 
 interface Transaction {
   id: string;
@@ -26,6 +30,58 @@ useFocusEffect(
     loadTransactions(); 
   }, [])
 );
+
+const createPDF = async (income: number, expense: number) => {
+  // Description එකත් සමඟ වගුව සැකසීම
+  const incomeRows = incomeTransactions.map((item, index) => 
+    `<tr>
+       <td>${index + 1}. ${item.category}</td>
+       <td>${item.description || '-'}</td>
+       <td>Rs: ${item.amount.toFixed(2)}</td>
+     </tr>`
+  ).join('');
+
+  const expenseRows = expenseTransactions.map((item, index) => 
+    `<tr>
+       <td>${index + 1}. ${item.category}</td>
+       <td>${item.description || '-'}</td>
+       <td>Rs: ${item.amount.toFixed(2)}</td>
+     </tr>`
+  ).join('');
+
+  const htmlContent = `
+  <html>
+    <body style="font-family: sans-serif; padding: 20px;">
+      <h1 style="color: #2f5d98;">Income & Expense Report</h1>
+      <p><strong>කාලසීමාව:</strong> ${fromDate} සිට ${toDate} දක්වා</p>
+      <hr/>
+      <h3>ආදායම් (Income):</h3>
+      <table width="100%" border="1" style="border-collapse: collapse; text-align: left;">
+        <tr><th>කාණ්ඩය</th><th>විස්තරය</th><th>මුදල</th></tr>
+        ${incomeRows}
+      </table>
+      <h3>වියදම් (Expense):</h3>
+      <table width="100%" border="1" style="border-collapse: collapse; text-align: left;">
+        <tr><th>කාණ්ඩය</th><th>විස්තරය</th><th>මුදල</th></tr>
+        ${expenseRows}
+      </table>
+      <hr/>
+      <p><strong>මුළු ආදායම:</strong> Rs: ${income.toFixed(2)}</p>
+      <p><strong>මුළු වියදම:</strong> Rs: ${expense.toFixed(2)}</p>
+
+      <div style="margin-top: 50px; color: #888; font-size: 12px; border-top: 1px solid #eee; padding-top: 10px;">
+        <p style="margin: 2px 0;">Aidea App</p>
+        <p style="margin: 2px 0;">R.K.U.D.Aberathna</p>
+        <p style="margin: 2px 0;">Umeshdulan124@gmail.com</p>
+        <p style="margin: 2px 0;">077-4969952</p>
+      </div>
+    </body>
+  </html>
+`;
+  
+  const { uri } = await Print.printToFileAsync({ html: htmlContent });
+  await Sharing.shareAsync(uri);
+};
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const isFocused = useIsFocused();
@@ -93,6 +149,7 @@ useFocusEffect(
       '05': 'මැයි', '06': 'ජූනි', '07': 'ජූලි', '08': 'අගෝස්තු',
       '09': 'සැප්තැම්බර්', '10': 'ඔක්තෝබර්', '11': 'නොවැම්බර්', '12': 'දෙසැම්බර්'
     };
+
     return `${parts[0]} ${monthsSinhala[parts[1]] || parts[1]} ${parts[2]}`;
   };
 
@@ -101,6 +158,11 @@ useFocusEffect(
     setToDate(tempTo);
     setRangeModalVisible(false);
   };
+
+// ආදායම් සහ වියදම් එකතුව ගණනය කිරීම
+const totalIncome = incomeTransactions.reduce((sum, item) => sum + item.amount, 0);
+const totalExpense = expenseTransactions.reduce((sum, item) => sum + item.amount, 0);
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -127,6 +189,13 @@ useFocusEffect(
             <Ionicons name="chevron-down" size={14} color="#666" />
           </TouchableOpacity>
         </View>
+
+
+<Button 
+  title="Download Report (PDF)" 
+  onPress={() => createPDF(totalIncome, totalExpense)} 
+/>
+
 
         {/* 1. INCOME SECTION */}
         <View style={[styles.sectionBanner, styles.incomeBanner]}>

@@ -1,11 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { ComponentProps, useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { ComponentProps, useCallback, useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useFocusEffect } from '@react-navigation/native';
-import { useCallback } from 'react';
 
 type IoniconsName = ComponentProps<typeof Ionicons>['name'];
 
@@ -36,6 +35,7 @@ export default function HomeScreen() {
   }, [])
 );
 
+const [profile, setProfile] = useState({ name: '', email: '', phone: '' });
 
   const [modalVisible, setModalVisible] = useState(false);
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
@@ -76,25 +76,41 @@ const [monthModalVisible, setMonthModalVisible] = useState(false);
   }, []);
 
 
+
+
   
  // 1. මෙම Hook එක Component එකේ ඉහළින්ම (Main Body එකේ) තබන්න
 // const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
 
 const loadSavedData = async () => {
-  try {
-    const savedTransactions = await AsyncStorage.getItem('@my_transactions');
-    if (savedTransactions) {
-      setTransactions(JSON.parse(savedTransactions));
-    }
+    try {
+      // Profile දත්ත ලබා ගැනීම
+      const savedName = await AsyncStorage.getItem('@user_name');
+      const savedEmail = await AsyncStorage.getItem('@user_email');
+      const savedPhone = await AsyncStorage.getItem('@user_phone');
+      setProfile({
+        name: savedName || 'පරිශීලක',
+        email: savedEmail || 'විද්‍යුත් තැපෑලක් නැත',
+        phone: savedPhone || 'දුරකථන අංකයක් නැත'
+      });
 
-    const savedAttendance = await AsyncStorage.getItem('@my_attendance');
-    if (savedAttendance) {
-      setAttendanceRecords(JSON.parse(savedAttendance));
+      // අනෙකුත් දත්ත
+      const savedTransactions = await AsyncStorage.getItem('@my_transactions');
+      if (savedTransactions) setTransactions(JSON.parse(savedTransactions));
+
+      const savedAttendance = await AsyncStorage.getItem('@my_attendance');
+      if (savedAttendance) setAttendanceRecords(JSON.parse(savedAttendance));
+      
+    } catch (error) {
+      console.log('Error loading data:', error);
     }
-  } catch (error) {
-    console.log('Error loading data:', error);
-  }
-};
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadSavedData();
+    }, [])
+  );
 
 const handleSaveTransaction = async () => {
   if (!amount || isNaN(Number(amount))) {
@@ -224,12 +240,12 @@ const totalBalance = totalIncome - totalExpense;
         {/* 1. TOP PROFILE HEADER */}
         <View style={styles.profileHeader}>
           <View style={styles.profileLeft}>
-            <View style={styles.avatar}><Text style={styles.avatarText}>U</Text></View>
+            <View style={styles.avatar}><Text style={styles.avatarText}>{profile.name.charAt(0) || 'U'}</Text></View>
             <View>
               <Text style={styles.welcomeText}>Welcome Back,</Text>
-              <Text style={styles.profileName}>Umesh</Text>
-              <Text style={styles.profileName}>Umeshdulan124@gmail.com</Text>
-              <Text style={styles.profileName}>077-4969952 / 078-5520069</Text>
+              <Text style={styles.profileName}>{profile.name}</Text>
+              <Text style={styles.profileName}>{profile.email}</Text>
+              <Text style={styles.profileName}>{profile.phone}</Text>
             </View>
           </View>
           <TouchableOpacity style={styles.notiButton}>
