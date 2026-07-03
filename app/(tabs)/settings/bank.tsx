@@ -15,23 +15,48 @@ const [newPassword, setNewPassword] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [name, setName] = useState('');
   const [banks, setBanks] = useState(Array(6).fill({ bankName: '', accountNo: '', branch: '', isEditing: true }));
+const [savedPassword, setSavedPassword] = useState(''); // මෙසේ අලුතින් එක් කරන්න
 
+  const [inputPassword, setInputPassword] = useState('');
   // මුරපද පරීක්ෂාව
-  const checkPassword = () => {
-    if (password === '1234') { 
-      setIsPasswordModalVisible(false);
+ const checkPassword = async () => {
+  const storedValue = await AsyncStorage.getItem('@app_password');
+    console.log("AsyncStorage එකේ දැනට තියෙන මුරපදය මෙයයි: ", storedValue);
+
+    console.log("Saved Password in state:", savedPassword); // මෙය ටර්මිනල් එකේ බලාගන්න
+    console.log("Input Password:", inputPassword);
+   // 2. ඔබ Default මුරපදය ලෙස '1234' භාවිතා කරනවා නම්:
+     
+console.log("Active Password:", activePassword);
+
+  if (inputPassword.trim() === activePassword) {
+        setIsPasswordModalVisible(false); // මෙතන නිවැරදි නම යොදන්න
     } else {
-      Alert.alert('වැරදි මුරපදයකි!');
+        Alert.alert('මුරපදය වැරදියි!');
     }
-  };
+};
+const activePassword = savedPassword || '1234';
+    // 1. AsyncStorage එකෙන් මේ වන විට ගබඩා වී ඇති මුරපදය ලබා ගන්න
+const loadPassword = async () => {
+    const password = await AsyncStorage.getItem('@app_password');
+    console.log("Storage එකෙන් ලැබුණු මුරපදය: ", password);
+    if (password) {
+        setSavedPassword(password);
+    }
+};
+    // මෙය හරිදැයි බලාගන්න
+console.log("Input Password:", inputPassword);
+console.log("Saved Password:", activePassword)
 
 // මුරපදය අලුත් කරන function එක
-const handlePasswordReset = async () => {
-  await AsyncStorage.setItem('@app_password', newPassword);
-  Alert.alert("සාර්ථකයි", "මුරපදය සාර්ථකව වෙනස් කරන ලදී.");
-  setIsResetModalVisible(false);
-  setNewPassword('');
+const handlePasswordReset = async (newPassword: string) => {
+    await AsyncStorage.setItem('@app_password', newPassword);
+    setSavedPassword(newPassword); // මෙය අනිවාර්යයෙන්ම කරන්න
+    Alert.alert('මුරපදය සාර්ථකව වෙනස් විය!');
 };
+useEffect(() => {
+    loadPassword();
+}, []);
 
   // දත්ත පූරණය
   useEffect(() => {
@@ -104,13 +129,18 @@ const handlePasswordReset = async () => {
         </View>
 
 
-        <Modal visible={isPasswordModalVisible} transparent={true}>
-          <View style={styles.modalView}>
-            <Text>මුරපදය ඇතුළත් කරන්න:</Text>
-            <TextInput secureTextEntry value={password} onChangeText={setPassword} style={styles.input} />
-            <Button title="ඇතුළු වන්න" onPress={checkPassword} />
-          </View>
-        </Modal>
+       <Modal visible={isPasswordModalVisible} transparent={true}>
+  <View style={styles.modalView}>
+    <Text>මුරපදය ඇතුළත් කරන්න:</Text>
+    <TextInput 
+      secureTextEntry 
+      value={inputPassword} 
+      onChangeText={setInputPassword} 
+      style={[styles.input, { color: 'blue' }]} // මෙතනදී ඔබට අවශ්‍ය පාට ලබා දෙන්න
+    />
+    <Button title="ඇතුළු වන්න" onPress={checkPassword} />
+  </View>
+</Modal>
 
 
         {banks.map((bank, index) => (
@@ -157,7 +187,8 @@ const handlePasswordReset = async () => {
     />
     <View style={styles.buttonContainer}>
   {/* සුරකින්න බොත්තම */}
-  <TouchableOpacity style={styles.saveButton} onPress={handlePasswordReset}>
+  <TouchableOpacity style={styles.saveButton} // මෙසේ වෙනස් කරන්න:
+onPress={() => handlePasswordReset(newPassword)}>
     <Text style={styles.btnText}>සුරකින්න</Text>
   </TouchableOpacity>
 
@@ -189,7 +220,17 @@ const styles = StyleSheet.create({
   editLabel: { color: 'blue', marginTop: 5 },
   bankBox: { backgroundColor: '#d2f0e9', padding: 15, borderRadius: 10, marginBottom: 15, elevation: 3 },
   bankTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 10, color: '#2c3e50' },
-  input: { borderBottomWidth: 1, borderColor: '#ccc', marginBottom: 10, padding: 5, backgroundColor: 'white' },
+  
+  // මෙන්න නිවැරදි කළ එකම input ස්ටයිල් එක
+  input: { 
+    borderBottomWidth: 1, 
+    borderColor: '#ccc', 
+    marginBottom: 10, 
+    padding: 5, 
+    backgroundColor: 'white',
+    color: 'blue' // ඔබට අවශ්‍ය වර්ණය මෙතැනින් වෙනස් කරන්න
+  },
+  
   infoText: { fontSize: 14, marginBottom: 5 },
   saveBtn: { backgroundColor: '#27ae60', padding: 10, borderRadius: 5, alignItems: 'center', marginTop: 10 },
   editBtn: { backgroundColor: '#3498db', padding: 10, borderRadius: 5, alignItems: 'center', marginTop: 10 },
@@ -197,21 +238,18 @@ const styles = StyleSheet.create({
   btnText: { color: '#fff', fontWeight: 'bold' },
   modalView: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#f2f2f2' },
 
-  buttonContainer: {
-    marginTop: 0, // බොත්තම් දෙක සඳහා පොදු ඉහළ පරතරය
-  },
+  buttonContainer: { marginTop: 0 },
   saveButton: {
-    backgroundColor: '#3498db', // සුරකින්න බොත්තමේ පාට (නිල්)
+    backgroundColor: '#3498db',
     padding: 15,
     borderRadius: 8,
-    marginBottom: 10, // බොත්තම් දෙක අතර පරතරය
+    marginBottom: 10,
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#da5d4f', // අවලංගු කරන්න බොත්තමේ පාට (රතු)
+    backgroundColor: '#da5d4f',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
   },
- 
 });

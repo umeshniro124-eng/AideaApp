@@ -5,7 +5,6 @@ import React, { ComponentProps, useCallback, useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-
 type IoniconsName = ComponentProps<typeof Ionicons>['name'];
 
 interface Category {
@@ -28,6 +27,19 @@ interface AttendanceRecord {
   type: 'work' | 'leave';
 }
 
+
+
+const getToday = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+
+
+
 export default function HomeScreen() {
   useFocusEffect(
   useCallback(() => {
@@ -45,7 +57,17 @@ const [profile, setProfile] = useState({ name: '', email: '', phone: '' });
   const [description, setDescription] = useState('');
 
   const [attendanceType, setAttendanceType] = useState<'work' | 'leave' | null>(null);
+
+
+
+const [transactionDate, setTransactionDate] = useState(getToday());
+  const [attendanceDate, setAttendanceDate] = useState(getToday());
   
+const openAddModal = () => {
+  setTransactionDate(getToday()); // මොඩලය විවෘත කරන විට අද දිනය සකසයි
+  setModalVisible(true);
+};
+
   
  // වත්මන් දිනය ලබා ගැනීමට අවශ්‍ය දත්ත
 const now = new Date();
@@ -112,6 +134,18 @@ const loadSavedData = async () => {
     }, [])
   );
 
+
+
+
+  useFocusEffect(
+  useCallback(() => {
+    setAttendanceDate(getToday());
+  }, [])
+);
+
+
+
+
 const handleSaveTransaction = async () => {
   if (!amount || isNaN(Number(amount))) {
     Alert.alert('වැරදියි', 'කරුණාකර නිවැරදි මුදලක් ඇතුළත් කරන්න.');
@@ -121,7 +155,7 @@ const handleSaveTransaction = async () => {
   const newTransaction: Transaction = {
     id: Date.now().toString(),
     type: transactionType,
-    date: date,
+    date: transactionDate,
     category: selectedCategory,
     amount: parseFloat(amount),
     description: description,
@@ -297,9 +331,9 @@ const totalBalance = totalIncome - totalExpense;
           >
             <Text style={styles.attendanceTitleText}>Attendance</Text>
             <View style={styles.attendanceDateBox}>
-              <Ionicons name="calendar" size={18} color="#000" />
-              <Text style={styles.attendanceDateText}>({displayDate})</Text>
-            </View>
+  <Ionicons name="calendar" size={18} color="#000" />
+  <Text style={styles.attendanceDateText}>({attendanceDate})</Text>
+</View>
           </TouchableOpacity>
 
           
@@ -421,7 +455,8 @@ const totalBalance = totalIncome - totalExpense;
             <Text style={styles.label}>Date (දිනය)</Text>
             <View style={styles.dateInputContainer}>
               <Ionicons name="calendar-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput style={styles.dateInput} value={date} onChangeText={setDate} />
+              <TextInput style={styles.dateInput} value={transactionDate} 
+  onChangeText={setTransactionDate} />
             </View>
 
             <Text style={styles.label}>Select Category</Text>
@@ -467,6 +502,7 @@ const totalBalance = totalIncome - totalExpense;
         value={selectedMonth} 
         onChangeText={setSelectedMonth} 
         placeholder="2026-06"
+        
       />
 
       <TouchableOpacity 
@@ -528,7 +564,7 @@ const styles = StyleSheet.create({
   attendanceRow: { flexDirection: 'row', gap: 12, marginBottom: 15 },
   attendanceSelectBox: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingVertical: 14, borderRadius: 12, borderWidth: 2, borderColor: 'transparent' },
   workSelectColor: { backgroundColor: '#2ecc71' },
-  leaveSelectColor: { backgroundColor: '#e74c3c' },
+  leaveSelectColor: { backgroundColor: '#d15143' },
   workActiveBorder: { borderColor: '#145a32' },
   leaveActiveBorder: { borderColor: '#641e16' },
   attendanceSelectText: { fontSize: 18, fontWeight: 'bold', color: '#000' },
