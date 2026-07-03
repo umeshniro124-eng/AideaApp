@@ -2,7 +2,7 @@
   "expo": {
     "name": "Aidea",
     "slug": "my-aidea-app",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myaideaapp",
@@ -15,6 +15,7 @@
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
       },
+      "versionCode": 4, 
       "predictiveBackGestureEnabled": false,
       "package": "com.blackaroow.myaideaapp"
     },
