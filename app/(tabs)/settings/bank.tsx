@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, Modal, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
@@ -18,23 +18,21 @@ const [newPassword, setNewPassword] = useState('');
 const [savedPassword, setSavedPassword] = useState(''); // මෙසේ අලුතින් එක් කරන්න
 
   const [inputPassword, setInputPassword] = useState('');
-  // මුරපද පරීක්ෂාව
- const checkPassword = async () => {
-  const storedValue = await AsyncStorage.getItem('@app_password');
-    console.log("AsyncStorage එකේ දැනට තියෙන මුරපදය මෙයයි: ", storedValue);
+ // මුරපදය පරීක්ෂා කිරීම
+  const checkPassword = async () => {
+    // AsyncStorage එකේ තිබෙන මුරපදය ගන්න
+    const storedPassword = await AsyncStorage.getItem('@app_password');
+    const activePassword = storedPassword || '1234'; // ගබඩා කර ඇත්නම් එය ගන්න, නැත්නම් '1234' ගන්න
 
-    console.log("Saved Password in state:", savedPassword); // මෙය ටර්මිනල් එකේ බලාගන්න
-    console.log("Input Password:", inputPassword);
-   // 2. ඔබ Default මුරපදය ලෙස '1234' භාවිතා කරනවා නම්:
-     
-console.log("Active Password:", activePassword);
+    console.log("Input:", inputPassword, "Active:", activePassword);
 
-  if (inputPassword.trim() === activePassword) {
-        setIsPasswordModalVisible(false); // මෙතන නිවැරදි නම යොදන්න
+    if (inputPassword.trim() === activePassword) {
+        setIsPasswordModalVisible(false);
+        setInputPassword(''); // සාර්ථක නම් input එක හිස් කරන්න
     } else {
         Alert.alert('මුරපදය වැරදියි!');
     }
-};
+  };
 const activePassword = savedPassword || '1234';
     // 1. AsyncStorage එකෙන් මේ වන විට ගබඩා වී ඇති මුරපදය ලබා ගන්න
 const loadPassword = async () => {
@@ -129,16 +127,31 @@ useEffect(() => {
         </View>
 
 
-       <Modal visible={isPasswordModalVisible} transparent={true}>
+       <Modal visible={isResetModalVisible} transparent={true}>
   <View style={styles.modalView}>
-    <Text>මුරපදය ඇතුළත් කරන්න:</Text>
+    <Text style={{ fontSize: 18, marginBottom: 10 }}>නව මුරපදය ඇතුළත් කරන්න:</Text>
     <TextInput 
       secureTextEntry 
-      value={inputPassword} 
-      onChangeText={setInputPassword} 
-      style={[styles.input, { color: 'blue' }]} // මෙතනදී ඔබට අවශ්‍ය පාට ලබා දෙන්න
+      value={newPassword} 
+      onChangeText={setNewPassword} 
+      style={styles.input} 
+      placeholder="නව මුරපදය"
     />
-    <Button title="ඇතුළු වන්න" onPress={checkPassword} />
+    <View style={styles.buttonContainer}>
+      <TouchableOpacity 
+        style={styles.saveButton} 
+        onPress={async () => {
+          await handlePasswordReset(newPassword);
+          setIsResetModalVisible(false); // සාර්ථක වූ පසු Modal එක වසන්න
+          setNewPassword(''); // input එක හිස් කරන්න
+        }}>
+        <Text style={styles.btnText}>සුරකින්න</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.cancelButton} onPress={() => setIsResetModalVisible(false)}>
+        <Text style={styles.btnText}>අවලංගු කරන්න</Text>
+      </TouchableOpacity>
+    </View>
   </View>
 </Modal>
 
@@ -155,15 +168,22 @@ useEffect(() => {
               </>
             ) : (
               <View>
-                <Text style={styles.infoText}>බැංකුව: {bank.bankName}</Text>
-                <Text style={styles.infoText}>ගිණුම් අංකය: {bank.accountNo}</Text>
-                <Text style={styles.infoText}>ශාඛාව: {bank.branch}</Text>
-                <TouchableOpacity style={styles.editBtn} onPress={() => toggleEdit(index)}><Text style={styles.btnText}>Edit</Text></TouchableOpacity>
-                <TouchableOpacity style={[styles.editBtn, {backgroundColor: '#e67e22'}]} onPress={() => onShare(bank)}>
-                  <Text style={styles.btnText}>Share</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+    <Text style={styles.infoText}>බැංකුව: {bank.bankName}</Text>
+    <Text style={styles.infoText}>ගිණුම් අංකය: {bank.accountNo}</Text>
+    <Text style={styles.infoText}>ශාඛාව: {bank.branch}</Text>
+    
+    {/* මෙතනින් බොත්තම් දෙක එක පේළියකට ගනිමු */}
+    <View style={styles.buttonRow}>
+      <TouchableOpacity style={[styles.inlineBtn, { backgroundColor: '#3498db' }]} onPress={() => toggleEdit(index)}>
+        <Text style={styles.btnText}>Edit</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity style={[styles.inlineBtn, { backgroundColor: '#e67e22' }]} onPress={() => onShare(bank)}>
+        <Text style={styles.btnText}>Share</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+)}
           </View>
         ))}
 
@@ -252,4 +272,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
+  buttonRow: {
+  flexDirection: 'row',       // එක පේළියක තබයි
+  justifyContent: 'space-between', // දෙපසට බෙදයි
+  marginTop: 10,
+},
+inlineBtn: {
+  flex: 1,                    // ඉඩ සමානව බෙදා ගනී
+  paddingVertical: 8,         // බොත්තමේ උස අඩු කරයි
+  marginHorizontal: 5,        // දෙපසින් පරතරය
+  borderRadius: 5,
+  alignItems: 'center',
+},
 });

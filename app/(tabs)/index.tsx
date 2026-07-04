@@ -1,10 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
-import React, { ComponentProps, useCallback, useEffect, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { ComponentProps, useCallback, useState } from 'react';
+import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 type IoniconsName = ComponentProps<typeof Ionicons>['name'];
 
 interface Category {
@@ -27,8 +26,6 @@ interface AttendanceRecord {
   type: 'work' | 'leave';
 }
 
-
-
 const getToday = () => {
   const d = new Date();
   const year = d.getFullYear();
@@ -36,8 +33,6 @@ const getToday = () => {
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
-
-
 
 
 export default function HomeScreen() {
@@ -93,59 +88,41 @@ const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slic
 
 const [monthModalVisible, setMonthModalVisible] = useState(false);
 
-  useEffect(() => {
-    loadSavedData();
-  }, []);
-
-
-
 
   
  // 1. මෙම Hook එක Component එකේ ඉහළින්ම (Main Body එකේ) තබන්න
 // const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
 
 const loadSavedData = async () => {
-    try {
-      // Profile දත්ත ලබා ගැනීම
-      const savedName = await AsyncStorage.getItem('@user_name');
-      const savedEmail = await AsyncStorage.getItem('@user_email');
-      const savedPhone = await AsyncStorage.getItem('@user_phone');
-      setProfile({
-        name: savedName || 'පරිශීලක',
-        email: savedEmail || 'විද්‍යුත් තැපෑලක් නැත',
-        phone: savedPhone || 'දුරකථන අංකයක් නැත'
-      });
+  try {
+    // 1. Profile දත්ත ලබා ගැනීම
+    const savedName = await AsyncStorage.getItem('@user_name');
+    const savedEmail = await AsyncStorage.getItem('@user_email');
+    const savedPhone = await AsyncStorage.getItem('@user_phone');
+    
+    setProfile({
+      name: savedName || 'පරිශීලක',
+      email: savedEmail || 'විද්‍යුත් තැපෑලක් නැත',
+      phone: savedPhone || 'දුරකථන අංකයක් නැත'
+    });
 
-      // අනෙකුත් දත්ත
-      const savedTransactions = await AsyncStorage.getItem('@my_transactions');
-      if (savedTransactions) setTransactions(JSON.parse(savedTransactions));
-
-      const savedAttendance = await AsyncStorage.getItem('@my_attendance');
-      if (savedAttendance) setAttendanceRecords(JSON.parse(savedAttendance));
-      
-    } catch (error) {
-      console.log('Error loading data:', error);
+    // 2. ගනුදෙනු (Transactions) දත්ත
+    const savedTransactions = await AsyncStorage.getItem('@my_transactions');
+    if (savedTransactions) {
+      setTransactions(JSON.parse(savedTransactions));
     }
-  };
 
-  useFocusEffect(
-    useCallback(() => {
-      loadSavedData();
-    }, [])
-  );
+    // 3. Attendance දත්ත
+    const savedAttendance = await AsyncStorage.getItem('@my_attendance');
+    if (savedAttendance) {
+      setAttendanceRecords(JSON.parse(savedAttendance));
+    }
+  } catch (error) {
+    console.log('Error loading data:', error);
+  }
+};
 
-
-
-
-  useFocusEffect(
-  useCallback(() => {
-    setAttendanceDate(getToday());
-  }, [])
-);
-
-
-
-
+  
 const handleSaveTransaction = async () => {
   if (!amount || isNaN(Number(amount))) {
     Alert.alert('වැරදියි', 'කරුණාකර නිවැරදි මුදලක් ඇතුළත් කරන්න.');
@@ -291,7 +268,7 @@ const totalBalance = totalIncome - totalExpense;
         <View style={styles.balanceCard}>
           <View style={styles.cardHeader}>
             <Ionicons name="wallet" size={24} color="#2f5d98" />
-            <Text style={styles.cardTitle}>Total Balance (මුළු ඉතිරිය)</Text>
+          <Text style={styles.cardTitle}>Total Balance (මුළු ඉතිරිය)</Text>
           </View>
           <Text style={styles.balanceAmount}>Rs: {totalBalance.toFixed(2)}</Text>
         </View>
@@ -333,7 +310,7 @@ const totalBalance = totalIncome - totalExpense;
             <View style={styles.attendanceDateBox}>
   <Ionicons name="calendar" size={18} color="#000" />
   <Text style={styles.attendanceDateText}>({attendanceDate})</Text>
-</View>
+          </View>
           </TouchableOpacity>
 
           
@@ -421,75 +398,76 @@ const totalBalance = totalIncome - totalExpense;
       </Modal>
 
       {/* ================= BOTTOM SHEET MODAL ================= */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHandle} />
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add New Transaction</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close-circle" size={26} color="#999" />
-              </TouchableOpacity>
-            </View>
+      <Modal visible={modalVisible} transparent={true} animationType="slide">
+  <View style={styles.modalOverlay}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.keyboardAvoidingView}
+    >
+      <View style={styles.modalContent}>
+        <View style={styles.modalHandle} />
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Add New Transaction</Text>
+          <TouchableOpacity onPress={() => setModalVisible(false)}>
+            <Ionicons name="close-circle" size={26} color="#999" />
+          </TouchableOpacity>
+        </View>
 
-            <View style={styles.toggleContainer}>
-              <TouchableOpacity 
-                style={[styles.toggleBtn, transactionType === 'income' && styles.activeIncomeBtn]}
-                onPress={() => setTransactionType('income')}
-              >
-                <Text style={[styles.toggleText, transactionType === 'income' && styles.activeToggleText]}>Income</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.toggleBtn, transactionType === 'expense' && styles.activeExpenseBtn]}
-                onPress={() => setTransactionType('expense')}
-              >
-                <Text style={[styles.toggleText, transactionType === 'expense' && styles.activeToggleText]}>Expense</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.label}>Date (දිනය)</Text>
-            <View style={styles.dateInputContainer}>
-              <Ionicons name="calendar-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput style={styles.dateInput} value={transactionDate} 
-  onChangeText={setTransactionDate} />
-            </View>
-
-            <Text style={styles.label}>Select Category</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-              {categories.map((cat, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.categoryChip,
-                    selectedCategory === cat.name && { backgroundColor: cat.color + '20', borderColor: cat.color, borderWidth: 1.5 }
-                  ]}
-                  onPress={() => setSelectedCategory(cat.name)}
-                >
-                  <Ionicons name={cat.icon} size={18} color={cat.color} />
-                  <Text style={[styles.categoryChipText, selectedCategory === cat.name && { fontWeight: 'bold', color: '#000' }]}>
-                    {cat.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <Text style={styles.label}>Amount (මුදල)</Text>
-            <TextInput style={styles.input} placeholder="Rs: 0.00" keyboardType="numeric" value={amount} onChangeText={setAmount} />
-
-            <Text style={styles.label}>Description (විස්තරය)</Text>
-            <TextInput style={styles.input} placeholder="වැඩේ මොකක්ද..." value={description} onChangeText={setDescription} />
-
-            <TouchableOpacity style={styles.saveButton} onPress={handleSaveTransaction}>
-              <Text style={styles.saveButtonText}>Save (සුරකින්න)</Text>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity
+              style={[styles.toggleBtn, transactionType === 'income' && styles.activeIncomeBtn]}
+              onPress={() => setTransactionType('income')}
+            >
+              <Text style={[styles.toggleText, transactionType === 'income' && styles.activeToggleText]}>Income</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleBtn, transactionType === 'expense' && styles.activeExpenseBtn]}
+              onPress={() => setTransactionType('expense')}
+            >
+              <Text style={[styles.toggleText, transactionType === 'expense' && styles.activeToggleText]}>Expense</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
+
+          <Text style={styles.label}>Date (දිනය)</Text>
+          <View style={styles.dateInputContainer}>
+            <Ionicons name="calendar-outline" size={20} color="#666" style={styles.inputIcon} />
+            <TextInput style={styles.dateInput} value={transactionDate} onChangeText={setTransactionDate} />
+          </View>
+
+          <Text style={styles.label}>Select Category</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+            {categories.map((cat, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.categoryChip,
+                  selectedCategory === cat.name && { backgroundColor: cat.color + '20', borderColor: cat.color, borderWidth: 1.5 }
+                ]}
+                onPress={() => setSelectedCategory(cat.name)}
+              >
+                <Ionicons name={cat.icon} size={18} color={cat.color} />
+                <Text style={[styles.categoryChipText, selectedCategory === cat.name && { fontWeight: 'bold', color: '#000' }]}>
+                  {cat.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          <Text style={styles.label}>Amount (මුදල)</Text>
+          <TextInput style={styles.input} placeholder="Rs: 0.00" keyboardType="numeric" value={amount} onChangeText={setAmount} />
+
+          <Text style={styles.label}>Description (විස්තරය)</Text>
+          <TextInput style={styles.input} placeholder="වැඩේ මොකක්ද..." value={description} onChangeText={setDescription} />
+
+          <TouchableOpacity style={styles.saveButton} onPress={handleSaveTransaction}>
+            <Text style={styles.saveButtonText}>Save (සුරකින්න)</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
+  </View>
+</Modal>
 
       
       <Modal visible={monthModalVisible} transparent={true} animationType="fade">
@@ -520,6 +498,28 @@ const totalBalance = totalIncome - totalExpense;
 }
 
 const styles = StyleSheet.create({
+
+modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end', // Modal එක පහළින් මතු වීමට
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '80%', // Modal එකට උපරිම උසක් ලබා දීම
+  },
+  scrollContent: {
+    paddingBottom: 20, // Keyboard එක උඩ ඇති විට පතුල වැසී යාම වැළැක්වීමට
+  },
+
+
   container: { flex: 1, backgroundColor: '#a58e8e', paddingHorizontal: 20 },
   profileHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15, marginBottom: 15 },
   profileLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -592,8 +592,6 @@ const styles = StyleSheet.create({
 
   fabContainer: { position: 'absolute', bottom: 20, left: 0, right: 0, alignItems: 'center', zIndex: 10 },
   fabButton: { backgroundColor: '#fbc02d', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 4 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#ffffff', borderTopLeftRadius: 25, borderTopRightRadius: 25, paddingHorizontal: 20, paddingBottom: 40, paddingTop: 10 },
   modalHandle: { width: 40, height: 5, backgroundColor: '#dbdbdb', borderRadius: 2.5, alignSelf: 'center', marginBottom: 15 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#222' },

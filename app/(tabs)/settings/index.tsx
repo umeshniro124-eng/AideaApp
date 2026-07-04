@@ -1,124 +1,157 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import BankDetails from './bank'; // BankDetails ලෙස export කර ඇති බව සහතික කරගන්න
+
+
 
 export default function SettingsScreen() {
-  const [userName, setUserName] = useState('');
+  const [activeTab, setActiveTab] = useState('profile');
+  
+  // Profile සඳහා අවශ්‍ය States
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+// 1. අලුතින් state එකක් එකතු කරන්න
   const [phone, setPhone] = useState('');
 
-  // මුලින් දත්ත පූරණය කිරීම
-  useEffect(() => {
-    loadSettings();
-  }, []);
 
-  const loadSettings = async () => {
-    try {
-      const name = await AsyncStorage.getItem('@user_name');
-      const email = await AsyncStorage.getItem('@user_email');
-      if (name) setUserName(name);
-      if (email) setEmail(email);
-    } catch (e) {
-      console.log('දත්ත පූරණය කිරීමේදී දෝෂයක් සිදුවිය', e);
-    }
+useEffect(() => {
+  const loadProfile = async () => {
+    const savedName = await AsyncStorage.getItem('@user_name');
+    const savedEmail = await AsyncStorage.getItem('@user_email');
+    const savedPhone = await AsyncStorage.getItem('@user_phone');
+    if (savedName) setName(savedName);
+    if (savedEmail) setEmail(savedEmail);
+    if (savedPhone) setPhone(savedPhone);
   };
+  loadProfile();
+}, []);
 
-  // දත්ත සුරැකීම
-  const saveSettings = async () => {
-    try {
-      await AsyncStorage.setItem('@user_name', userName);
-      await AsyncStorage.setItem('@user_email', email);
-      await AsyncStorage.setItem('@user_phone', phone);
-          alert('තොරතුරු සාර්ථකව සුරැකිනි!');
-    } catch (e) {
-      alert('සුරැකීමට නොහැකි විය.');
-    }
-  };
 
-const resetAppData = async () => {
-  Alert.alert(
-    "සියලු දත්ත මකා දමන්නද?",
-    "මෙම ක්‍රියාවෙන් ඔබේ නම, ඊමේල්, ගනුදෙනු සහ පැමිණීම් වාර්තා සියල්ල ස්ථිරවම මකා දමනු ඇත. ඔබට විශ්වාසද?",
-    [
-      { text: "නැත", style: "cancel" },
-      { 
-        text: "ඔව්, මකා දමන්න", 
-        style: "destructive",
-        onPress: async () => {
-          // 1. AsyncStorage හි ඇති සියලු දත්ත මකන්න
-          await AsyncStorage.clear(); 
-          
-          // 2. තිරයේ පෙන්වන State ද හිස් කරන්න (මෙය අනිවාර්යයි)
-          setUserName('');
-          setEmail('');
-          setPhone('');
-          
-          Alert.alert("සාර්ථකයි", "ඇප් එකේ දත්ත සියල්ල ඉවත් කරන ලදී.");
-        }
-      }
-    ]
-  );
+const handleSaveProfile = async () => {
+  try {
+    await AsyncStorage.setItem('@user_name', name);
+    await AsyncStorage.setItem('@user_email', email);
+    await AsyncStorage.setItem('@user_phone', phone);
+    alert("දත්ත සාර්ථකව සුරකින ලදී!");
+  } catch (error) {
+    alert("දත්ත සුරැකීමේදී දෝෂයක් ඇතිවිය.");
+  }
+  
 };
 
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <Text style={styles.title}>Settings</Text>
+    <View style={styles.container}>
+      {/* Custom Tabs */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'profile' && styles.activeTab]} 
+          onPress={() => setActiveTab('profile')}
+        >
+          <Text style={activeTab === 'profile' ? styles.activeText : styles.inactiveText}>Profile</Text>
+        </TouchableOpacity>
         
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>මගේ තොරතුරු</Text>
-          
-          <Text style={styles.label}>නම:</Text>
-          <TextInput 
-            style={styles.input} 
-            value={userName} 
-            onChangeText={setUserName} 
-            placeholder="ඔබේ නම ඇතුළත් කරන්න" 
-          />
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'bank' && styles.activeTab]} 
+          onPress={() => setActiveTab('bank')}
+        >
+          <Text style={activeTab === 'bank' ? styles.activeText : styles.inactiveText}>Bank Card</Text>
+        </TouchableOpacity>
+      </View>
 
-          <Text style={styles.label}>ඊමේල් ලිපිනය:</Text>
-          <TextInput 
-            style={styles.input} 
-            value={email} 
-            onChangeText={setEmail} 
-            placeholder="ඔබේ ඊමේල් ලිපිනය" 
-            keyboardType="email-address"
-          />
+      {/* Content */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {activeTab === 'profile' ? (
+          <View style={styles.profileContent}>
+            <Text style={styles.title}>Edit Profile</Text>
+            
+            <Text style={styles.label}>නම (Name)</Text>
+            <TextInput 
+              style={styles.input} 
+              placeholder="ඔබේ නම ඇතුළත් කරන්න" 
+              value={name} 
+              onChangeText={setName} 
+            />
 
-<Text style={styles.label}>දුරකථන අංකය:</Text>
-<TextInput 
-  style={styles.input} 
-  value={phone} 
-  onChangeText={setPhone} 
-  placeholder="ඔබේ දුරකථන අංකය" 
-  keyboardType="phone-pad" // මෙය දුරකථන අංක සඳහා පමණක් වන keypad එක පෙන්වයි
-/>
+            <Text style={styles.label}>ඊමේල් (Email)</Text>
+            <TextInput 
+              style={styles.input} 
+              placeholder="ඔබේ ඊමේල් ලිපිනය" 
+              value={email} 
+              onChangeText={setEmail} 
+              keyboardType="email-address"
+            />
+            
+            <Text style={styles.label}>දුරකතන අංකය (Phone Number)</Text>
+            <TextInput 
+              style={styles.input} 
+      placeholder="07xxxxxxxx" 
+              value={phone} 
+              onChangeText={setPhone} 
+      keyboardType="phone-pad" // මෙය දුරකතන අංක සඳහා පමණක් විශේෂිත වූ keyboard එකකි
+            />
 
-
-          <TouchableOpacity style={styles.saveBtn} onPress={saveSettings}>
-            <Text style={styles.saveBtnText}>සුරකින්න</Text>
-          </TouchableOpacity>
-        </View>
-
-
-
-
-
-        {/* මෙතනට ඔබට අවශ්‍ය නම් BankDetails තිරයට යාමට බොත්තමක් එක් කළ හැක */}
+   <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
+  <Text style={styles.btnText}>සුරකින්න (Save)</Text>
+</TouchableOpacity>
+          </View>
+) : (
+  <View>
+    <BankDetails />
+  </View>
+)}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3ecec', padding: 20 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#333' },
-  section: { backgroundColor: '#fff', padding: 20, borderRadius: 15, elevation: 3 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, color: '#2f5d98' },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 5, color: '#555' },
-  input: { borderWidth: 1, borderColor: '#ddd', padding: 12, borderRadius: 8, marginBottom: 15, backgroundColor: '#fafafa' },
-  saveBtn: { backgroundColor: '#2f5d98', padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 10 },
-  saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f5f5f5',
+    paddingTop: 10 
+  },
+  tabContainer: { 
+    flexDirection: 'row', 
+    backgroundColor: '#fff', 
+    marginHorizontal: 15, 
+    marginVertical: 10,
+    borderRadius: 10, 
+    padding: 5,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  tab: { 
+    flex: 1, 
+    paddingVertical: 12, 
+    alignItems: 'center',
+    borderRadius: 8
+  },
+  activeTab: { backgroundColor: '#2f5d98' },
+  activeText: { color: '#fff', fontWeight: 'bold' },
+  inactiveText: { color: '#666', fontWeight: '600' },
+  content: { flex: 1, paddingHorizontal: 15 },
+  profileContent: { marginBottom: 20 },
+  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 20, color: '#333' },
+  label: { fontSize: 14, marginBottom: 5, color: '#555', fontWeight: '500' },
+  input: { 
+    backgroundColor: '#fff', 
+    padding: 12, 
+    borderRadius: 8, 
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#ddd'
+  },
+  saveButton: {
+    backgroundColor: '#2f5d98',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10
+  },
+  btnText: { color: '#fff', fontWeight: 'bold' }
 });
